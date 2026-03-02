@@ -7,6 +7,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
 import os from "os";
+import { PDFDocument } from 'pdf-lib';
 
 // Configure multer for file uploads
 const upload = multer({ dest: os.tmpdir() });
@@ -28,7 +29,6 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Tool not specified", field: "tool" });
       }
 
-      // We take the first file for MVP processing
       const file = files[0];
       
       const job = await storage.createJob({
@@ -37,7 +37,6 @@ export async function registerRoutes(
         status: "processing"
       });
 
-      // Start processing in background (dummy processing for MVP)
       processJob(job.id, file, tool).catch(console.error);
 
       res.status(201).json(job);
@@ -78,20 +77,39 @@ export async function registerRoutes(
   return httpServer;
 }
 
-// Dummy processing function
 async function processJob(jobId: number, file: Express.Multer.File, tool: string) {
   try {
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // For MVP, we just copy the uploaded file and pretend it's processed.
-    // In a real application, we would use pdf-lib, pdf2pic, docx, etc. here.
     const resultExt = tool.includes('pdf') ? '.pdf' : '.png';
     const resultFilename = `processed_${jobId}_${file.originalname}${resultExt}`;
     const resultPath = path.join(os.tmpdir(), resultFilename);
-    
-    // Just copy the original file as the result for the MVP
-    await fs.copyFile(file.path, resultPath);
+
+    if (tool === 'images-to-pdf') {
+      const imgBytes = await fs.readFile(file.path);
+      const pdfDoc = await PDFDocument.create();
+      let image;
+      
+      const lowerName = file.originalname.toLowerCase();
+      if (lowerName.endsWith('.png')) {
+        image = await pdfDoc.embedPng(imgBytes);
+      } else if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
+        image = await pdfDoc.embedJpg(imgBytes);
+      } else {
+        throw new Error("Unsupported image format. Use PNG or JPG.");
+      }
+
+      const page = pdfDoc.addPage([image.width, image.height]);
+      page.drawImage(image, {
+        x: 0,
+        y: 0,
+        width: image.width,
+        height: image.height,
+      });
+
+      const pdfBytes = await pdfDoc.save();
+      await fs.writeFile(resultPath, pdfBytes);
+    } else {
+      await fs.copyFile(file.path, resultPath);
+    }
     
     await storage.updateJob(jobId, {
       status: "completed",
@@ -102,5 +120,9 @@ async function processJob(jobId: number, file: Express.Multer.File, tool: string
       status: "failed",
       errorMessage: err.message
     });
+  } finally {
+    try {
+      await fs.unlink(file.path);
+    } catch {}
   }
 }

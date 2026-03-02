@@ -6,6 +6,7 @@ import { ToolGrid, TOOLS } from "@/components/ToolGrid";
 import { useCreateJob, useJob } from "@/hooks/use-jobs";
 import { Loader2, CheckCircle2, AlertCircle, Download, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 export default function Home() {
   const [files, setFiles] = useState<File[]>([]);
@@ -16,7 +17,6 @@ export default function Home() {
   const createJob = useCreateJob();
   const { data: job, isLoading: isPolling, isError } = useJob(activeJobId);
 
-  // Trigger confetti when job completes successfully
   useEffect(() => {
     if (job?.status === "completed") {
       confetti({
@@ -65,7 +65,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
-      {/* Animated Background Elements for Extra Polish */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-white/5 blur-[100px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#5A51C6]/30 blur-[120px]" />
@@ -77,7 +76,6 @@ export default function Home() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="w-full max-w-3xl glass-card rounded-3xl p-8 md:p-12 relative overflow-hidden"
       >
-        {/* Header section */}
         <div className="text-center mb-10">
           <motion.h1 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -98,7 +96,6 @@ export default function Home() {
         </div>
 
         <AnimatePresence mode="wait">
-          {/* STATE 1: SELECTION */}
           {!activeJobId && (
             <motion.div
               key="selection"
@@ -118,7 +115,6 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* STATE 2: CONVERTING */}
           {isConverting && (
             <motion.div
               key="converting"
@@ -138,7 +134,6 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* STATE 3: SUCCESS */}
           {isSuccess && (
             <motion.div
               key="success"
@@ -180,7 +175,6 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* STATE 4: ERROR */}
           {isFailed && (
             <motion.div
               key="error"
@@ -207,17 +201,22 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
-
       </motion.div>
 
-      {/* Footer */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
-        className="mt-8 text-white/50 text-sm font-medium tracking-wide"
+        className="mt-8 text-white/50 text-sm font-medium tracking-wide flex flex-col items-center gap-4"
       >
-        Minimal. Fast. Secure.
+        <div>Minimal. Fast. Secure.</div>
+        <div className="flex gap-4 flex-wrap justify-center">
+          <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+          <Link href="/about" className="hover:text-white transition-colors">About</Link>
+          <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
+          <Link href="/disclaimer" className="hover:text-white transition-colors">Disclaimer</Link>
+        </div>
       </motion.div>
     </main>
   );
